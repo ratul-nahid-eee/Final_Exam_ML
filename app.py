@@ -1,22 +1,10 @@
-# app.py
-"""
-Gradio app to serve the tuned Random Forest pipeline for Water Potability.
-Assumes the saved pipeline (preprocessor + RandomForest) is in:
-    final_random_forest_model.pkl
-
-Install requirements if you haven't:
-    pip install gradio pandas numpy scikit-learn xgboost
-"""
-
 import pickle
 import numpy as np
 import pandas as pd
 import gradio as gr
 
-# Path to the saved model (change if necessary)
 MODEL_PATH = "final_random_forest_model.pkl"
 
-# Feature names used by the pipeline (order matters)
 FEATURE_NAMES = [
     "ph",
     "Hardness",
@@ -47,7 +35,6 @@ def iqr_cap_outliers(X):
 
     return X_capped
 
-# Load the pipeline
 with open("final_random_forest_model.pkl", "rb") as file:
     model = pickle.load(file)
 
@@ -63,15 +50,11 @@ def make_input_dataframe(
     trihalomethanes,
     turbidity,
 ):
-    """
-    Build a single-row DataFrame with the columns expected by the pipeline.
-    We will pass 'unknown' ph as np.nan so the pipeline imputer can handle it.
-    """
-    # Map 'unknown' to actual NaN so SimpleImputer in pipeline imputes it
+
     if ph_category is None or ph_category == "unknown":
         ph_val = np.nan
     else:
-        ph_val = ph_category  # 'acidic', 'neutral', 'alkaline'
+        ph_val = ph_category 
 
     data = {
         "ph": ph_val,
@@ -99,12 +82,8 @@ def predict_potability(
     organic_carbon,
     trihalomethanes,
     turbidity,
-):
-    """
-    Predict potability label and probability using the loaded pipeline.
-    Returns: (label_str, probability_float)
-    """
-    # Build input DataFrame
+):  
+    
     X = make_input_dataframe(
         ph_category,
         hardness,
@@ -117,26 +96,22 @@ def predict_potability(
         turbidity,
     )
 
-    # Predict probability and label
     try:
-        proba = model.predict_proba(X)[:, 1][0]  # probability of class 1 (potable)
+        proba = model.predict_proba(X)[:, 1][0]
         pred = model.predict(X)[0]
     except AttributeError as e:
-        # Model doesn't support predict_proba (shouldn't happen for RandomForest pipeline)
         pred = model.predict(X)[0]
         proba = None
 
     label = "Potable (1)" if int(pred) == 1 else "Not potable (0)"
     proba_display = f"{proba:.3f}" if proba is not None else "N/A"
 
-    # Friendly output string and numeric probability
     label_text = f"{label} — probability: {proba_display}"
     prob_float = float(proba) if proba is not None else None
 
     return label_text, prob_float
 
 
-# --- Build Gradio interface ---
 title = "Water Potability Predictor"
 description = (
     "Enter water measurements. The app uses a pre-trained RandomForest pipeline "
@@ -144,7 +119,6 @@ description = (
     "If you don't know a value, leave it blank — the pipeline will impute it."
 )
 
-# Input components
 inputs = [
     gr.Dropdown(
         choices=["acidic", "neutral", "alkaline", "unknown"],
@@ -162,27 +136,22 @@ inputs = [
     gr.Number(value=3.0, label="Turbidity (NTU)", precision=3),
 ]
 
-# Output components: text summary + numeric probability
 outputs = [
     gr.Textbox(label="Prediction"),
     gr.Number(label="Probability (class=1, potable)")
 ]
 
-# Create interface
-iface = gr.Interface(
+app = gr.Interface(
     fn=predict_potability,
     inputs=inputs,
     outputs=outputs,
     title=title,
     description=description,
     examples=[
-        # (ph_category, hardness, solids, chloramines, sulfate,
-        #  conductivity, organic_carbon, trihalomethanes, turbidity)
         ["neutral", 150, 10000, 5, 300, 400, 5, 60, 3],
         ["acidic", 200, 15000, 4.5, 250, 500, 6, 55, 4.0],
         ["unknown", 100, 8000, 3.2, 210, 380, 4.2, 45, 2.5],
     ],
 )
 
-iface.launch(share=True)
-
+app.launch(share=True)
