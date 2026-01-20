@@ -1,0 +1,2 @@
+pH category (converted from numeric pH),Hardness (mg/L),Solids (ppm),Chloramines (ppm),Sulfate (mg/L),Conductivity (µS/cm),Organic carbon (mg/L),Trihalomethanes (µg/L),Turbidity (NTU),Prediction,"Probability (class=1, potable)",timestamp
+neutral,150,10007,3,280,420,5,60,3,Not potable (0) — probability: 0.429,0.4289247232219113,2026-01-20 12:12:26.347858
